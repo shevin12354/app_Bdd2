@@ -53,42 +53,5 @@
         </div>
     </div>
 </div>
-
-<script>
-    function buscarPorId() {
-        let input = document.getElementById("searchId");
-        let filtro = input.value.toUpperCase();
-        let filas = document.getElementById("cuerpoTabla").getElementsByTagName("tr");
-
-        for (let i = 0; i < filas.length; i++) {
-            let celdaId = filas[i].getElementsByTagName("td")[2]; // Columna del ID
-            if (celdaId) {
-                let textoId = celdaId.textContent || celdaId.innerText;
-                filas[i].style.display = textoId.toUpperCase().indexOf(filtro) > -1 ? "" : "none";
-            }
-        }
-    }
-
-    fetch('/datos')
-        .then(res => res.json())
-        .then(data => {
-            const cuerpo = document.getElementById('cuerpoTabla');
-            cuerpo.innerHTML = ''; // Limpiar antes de cargar
-            data.forEach(fila => {
-                const fechaFormateada = new Date(fila.FECHA).toLocaleString('es-CO');
-                cuerpo.innerHTML += `
-                    <tr>
-                        <td class="text-muted small">${fechaFormateada}</td>
-                        <td><span class="badge bg-light text-dark border">${fila.USUARIO}</span></td>
-                        <td><strong>${fila.TERC_ID}</strong></td>
-                        <td>${fila.TERC_NOMBRES} ${fila.TERC_APELLIDOS}</td>
-                        <td class="text-secondary small">${fila.ASIG_ASIGNATURA}</td>
-                        <td class="text-center"><span class="badge-nota bg-secondary text-white">${fila.HIST_NOTA_ANT || '0.0'}</span></td>
-                        <td class="text-center"><span class="badge-nota bg-primary text-white">${fila.HIST_NOTA_DESP}</span></td>
-                    </tr>`;
-            });
-        });
-</script>
-
 </body>
 </html>
