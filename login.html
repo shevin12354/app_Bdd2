@@ -1,0 +1,27 @@
+<div class="container mt-5">
+    <h3>Login</h3>
+    <input type="text" id="usuario" placeholder="Usuario" class="form-control mb-2">
+    <input type="password" id="password" placeholder="Contraseña" class="form-control mb-2">
+    <button onclick="login()" class="btn btn-primary">Ingresar</button>
+</div>
+
+<script>
+function login() {
+    const usuario = document.getElementById('usuario').value;
+    const password = document.getElementById('password').value;
+
+    fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuario, password })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = '/';
+        } else {
+            alert('Credenciales incorrectas');
+        }
+    });
+}
+</script>
