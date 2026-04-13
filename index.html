@@ -3,55 +3,370 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auditoría Académica - Uniremington</title>
+    <title>SGA - Uniremington</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .navbar-remington { background-color: #004a99; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .card { border: none; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-        .table thead { background-color: #004a99; color: white; }
-        .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #004a99; }
-        .search-input { padding-left: 45px; border-radius: 25px; border: 2px solid #e0e0e0; transition: 0.3s; }
-        .search-input:focus { border-color: #004a99; box-shadow: none; }
-        .badge-nota { font-size: 0.9em; padding: 6px 12px; border-radius: 8px; }
+        :root { --remington-blue: #004a99; --remington-dark: #002d5f; }
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
+        .navbar-remington { background: linear-gradient(90deg, var(--remington-blue), var(--remington-dark)); }
+        .seccion-web { padding: 20px; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        #vista-login { 
+            height: 100vh; display: flex; align-items: center; justify-content: center; 
+            background: linear-gradient(135deg, var(--remington-blue) 0%, var(--remington-dark) 100%); 
+        }
+        .nav-link { cursor: pointer; }
     </style>
 </head>
 <body>
 
-<nav class="navbar navbar-remington py-3 mb-4">
-    <div class="container text-center">
-        <h3 class="m-0 w-100">🎓 Panel de Auditoría de Notas</h3>
+<div id="vista-login">
+    <div class="card p-4 text-center shadow-lg" style="max-width: 400px; width: 90%;">
+        <div class="mb-3"><span style="font-size: 3rem;">🎓</span></div>
+        <h3 class="fw-bold mb-3" style="color: var(--remington-blue);">SGA Uniremington</h3>
+        <p class="text-muted small">Ingresa tu documento como usuario y clave</p>
+        <input type="text" id="usu" placeholder="Usuario" class="form-control mb-3 form-control-lg">
+        <input type="password" id="pass" placeholder="Contraseña" class="form-control mb-3 form-control-lg">
+        <button onclick="ejecutarLogin()" class="btn btn-primary w-100 btn-lg" style="background-color: var(--remington-blue); border-radius: 25px;">Ingresar</button>
     </div>
-</nav>
+</div>
 
-<div class="container">
-    <div class="row mb-4 justify-content-center">
-        <div class="col-md-6 position-relative">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="searchId" class="form-control search-input form-control-lg" 
-                   placeholder="Buscar por ID del estudiante..." onkeyup="buscarPorId()">
+<div id="vista-principal" style="display: none;">
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-remington sticky-top shadow">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#" onclick="cambiarSeccion('inicio', null)">SGA Uniremington</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" onclick="cambiarSeccion('inicio', this)">🏠 Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" onclick="cambiarSeccion('datos', this)">📊 Datos</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="dropProcesos" role="button" data-bs-toggle="dropdown">⚙️ Procesos</a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" onclick="cambiarSeccion('auditoria', null)">📋 Auditoría de Notas</a></li>
+                            <li><a class="dropdown-item" onclick="cambiarSeccion('asignar', null)">💎 Asignar Pensum</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <span id="saludoUser" class="navbar-text text-white fw-bold"></span>
+            </div>
         </div>
-    </div>
+    </nav>
 
-    <div class="card p-4">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle" id="tablaAuditoria">
-                <thead>
-                    <tr>
-                        <th>Fecha y Hora</th>
-                        <th>User</th>
-                        <th>ID</th>
-                        <th>Estudiante</th>
-                        <th>Asignatura</th>
-                        <th class="text-center">Nota Ant.</th>
-                        <th class="text-center">Nota Nueva</th>
-                    </tr>
-                </thead>
-                <tbody id="cuerpoTabla">
-                    </tbody>
-            </table>
+    <div class="container mt-4">
+        <div id="sec-inicio" class="seccion-web">
+            <div class="card p-5 text-center">
+                <h1 class="display-5" style="color: var(--remington-blue);">¡Bienvenido al Panel!</h1>
+                <p class="lead text-muted">Selecciona una opción del menú para comenzar a gestionar el sistema.</p>
+                <div class="mt-4">
+                    <button class="btn btn-outline-primary me-2" onclick="cambiarSeccion('datos', null)">Ver Tablas</button>
+                    <button class="btn btn-primary" onclick="cambiarSeccion('auditoria', null)">Ver Auditoría</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="sec-datos" class="seccion-web" style="display: none;">
+            <div class="card p-4">
+                <h3 class="mb-3">📊 Gestión de Datos (Terceros)</h3>
+                <hr>
+                <div class="alert alert-info">Aquí cargarás el CRUD de estudiantes para la próxima entrega.</div>
+            </div>
+        </div>
+
+        <div id="sec-auditoria" class="seccion-web" style="display: none;">
+            <div class="card p-4">
+                <h4 class="mb-4 text-primary">📋 Historial de Auditoría de Notas</h4>
+                <div class="input-group mb-4">
+                    <span class="input-group-text bg-white">🔍</span>
+                    <input type="text" id="searchId" class="form-control form-control-lg border-start-0" 
+                           placeholder="Filtrar por ID del estudiante..." onkeyup="buscarPorId()">
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Fecha</th><th>Usuario</th><th>ID</th><th>Estudiante</th><th>Asignatura</th><th>Ant.</th><th>Nueva</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpoTabla"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="sec-asignar" class="seccion-web" style="display: none;">
+            <div class="card p-4 shadow-sm border-0">
+                <h4 class="mb-4 text-primary fw-bold">💎 Proceso: Asignar Pensum Académico</h4>
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card p-3 bg-light border-0">
+                            <label class="form-label fw-bold">Paso 1: Buscar Estudiante</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0">👤</span>
+                                <input type="text" id="busc_id" class="form-control border-start-0" 
+                                       placeholder="Nombre o ID..." onkeyup="filtrarEstudiantesLista()">
+                            </div>
+                            <div id="lista_estudiantes" class="list-group mt-2 shadow-sm" style="max-height: 200px; overflow-y: auto; display: none;">
+                                </div>
+                            <div id="resultado_busqueda" class="mt-2 fw-bold text-primary" style="font-size: 0.9rem;"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card p-3 bg-light border-0">
+                            <label class="form-label fw-bold">Paso 2: Programa y Plan de Estudio</label>
+                            <select id="sel_programa" class="form-select mb-2" disabled>
+                                <option value="IS">Ingeniería de Sistemas (Uniremington)</option>
+                            </select>
+                            <select id="sel_pensum" class="form-select">
+                                <option value="">-- Selecciona el Plan --</option>
+                                <option value="1000">Plan de Estudios Ingeniería (ID: 1000)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card p-3 bg-light border-0">
+                            <label class="form-label fw-bold">Paso 3: Periodo Académico (Solo números)</label>
+                            <input type="number" id="tepe_periodo" class="form-control" 
+                                   placeholder="Ej: 202601" value="202601">
+                            <small class="text-muted">Formato: Año + Semestre (Ej: 202601)</small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 d-flex align-items-end">
+                        <button class="btn btn-success btn-lg w-100 shadow-sm" onclick="procesarAsignacionFinal()" style="border-radius: 12px; font-weight: bold;">
+                            🚀 REGISTRAR ASIGNACIÓN
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // 1. LOGIN
+    function ejecutarLogin() {
+        const usuario = document.getElementById('usu').value;
+        const password = document.getElementById('pass').value;
+
+        fetch('/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ usuario, password })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('vista-login').style.display = 'none';
+                document.getElementById('vista-principal').style.display = 'block';
+                document.getElementById('saludoUser').innerText = "👤 " + data.nombre;
+                cambiarSeccion('inicio', null); 
+            } else {
+                Swal.fire('Error', 'Documento o contraseña incorrectos', 'error');
+            }
+        });
+    }
+
+    // 2. NAVEGACIÓN ENTRE SECCIONES
+    function cambiarSeccion(seccion, elemento) {
+        // Ocultar todas
+        document.querySelectorAll('.seccion-web').forEach(s => s.style.display = 'none');
+        // Quitar clases active de los links
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        
+        // Mostrar seleccionada
+        const target = document.getElementById('sec-' + seccion);
+        if(target) target.style.display = 'block';
+        
+        // Activar link si existe
+        if(elemento) elemento.classList.add('active');
+
+        // Cargar datos si es auditoría
+        if(seccion === 'auditoria') cargarDatosAuditoria();
+    }
+
+    // 3. CARGAR DATOS DE ORACLE
+    function cargarDatosAuditoria() {
+        fetch('/datos')
+            .then(res => res.json())
+            .then(data => {
+                const cuerpo = document.getElementById('cuerpoTabla');
+                cuerpo.innerHTML = '';
+                data.forEach(fila => {
+                    cuerpo.innerHTML += `
+                        <tr>
+                            <td class="small text-muted">${new Date(fila.FECHA).toLocaleString()}</td>
+                            <td><span class="badge bg-light text-dark border">${fila.USUARIO}</span></td>
+                            <td><strong>${fila.TERC_ID}</strong></td>
+                            <td>${fila.TERC_NOMBRES} ${fila.TERC_APELLIDOS || ''}</td>
+                            <td>${fila.ASIG_ASIGNATURA}</td>
+                            <td class="text-center">${fila.HIST_NOTA_ANT || '0.0'}</td>
+                            <td class="text-center text-primary fw-bold">${fila.HIST_NOTA_DESP}</td>
+                        </tr>`;
+                });
+            });
+    }
+
+    // 4. BUSCADOR POR ID (CORREGIDO)
+    function buscarPorId() {
+        let filter = document.getElementById("searchId").value.toUpperCase();
+        let rows = document.getElementById("cuerpoTabla").getElementsByTagName("tr");
+
+        for (let i = 0; i < rows.length; i++) {
+            let td = rows[i].getElementsByTagName("td")[2]; // Columna del ID
+            if (td) {
+                let text = td.textContent || td.innerText;
+                rows[i].style.display = text.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+            }
+        }
+    }
+
+    // 5. PROCESAR ASIGNACIÓN (EJEMPLO)
+    function procesarAsignacion() {
+        Swal.fire('¡Procesado!', 'Registro guardado en Oracle correctamente.', 'success');
+    }
+
+    // Variable global para guardar el ID del estudiante seleccionado
+    let estudianteSeleccionadoID = null;
+
+    // PASO A: Buscar estudiante en la tabla TERCEROS
+    function buscarEstudianteParaAsignar() {
+        const idABuscar = document.getElementById('busc_id').value;
+        if (!idABuscar) return Swal.fire('Oye', 'Escribe un ID primero', 'warning');
+
+        // Consultamos la ruta de terceros que ya tienes en el servidor
+        fetch('/terceros')
+            .then(res => res.json())
+            .then(data => {
+                const estudiante = data.find(t => t.TERC_ID == idABuscar);
+                if (estudiante) {
+                    estudianteSeleccionadoID = estudiante.TERC_ID;
+                    document.getElementById('resultado_busqueda').innerText = 
+                        `✅ Seleccionado: ${estudiante.TERC_NOMBRES} ${estudiante.TERC_APELLIDOS}`;
+                    document.getElementById('sel_programa').disabled = false;
+                } else {
+                    estudianteSeleccionadoID = null;
+                    document.getElementById('resultado_busqueda').innerText = "❌ Estudiante no encontrado";
+                    Swal.fire('Error', 'El estudiante no existe en la tabla TERCEROS', 'error');
+                }
+            });
+    }
+
+    // PASO E: Enviar el INSERT al servidor
+    function procesarAsignacionFinal() {
+        // Convertimos los valores a números explícitamente
+        const pensId = Number(document.getElementById('sel_pensum').value);
+        const periodo = Number(document.getElementById('tepe_periodo').value);
+        const tercId = Number(estudianteSeleccionadoID); // El ID del estudiante que capturamos
+
+        if (!tercId || !pensId || !periodo) {
+            return Swal.fire('Faltan datos', 'Revisa que el estudiante, el plan y el periodo sean válidos.', 'warning');
+        }
+
+        const payload = {
+            PENS_ID: pensId,   // Ejemplo: 1000
+            TERC_ID: tercId,   // Ejemplo: 101
+            PERIODO: periodo   // Ejemplo: 202601
+        };
+
+        console.log("Enviando a Oracle:", payload); // Para que revises en la consola
+
+        fetch('/asignar-pensum', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire('¡Éxito!', 'Registro guardado con éxito en Oracle.', 'success');
+                // Limpiar campos
+                document.getElementById('busc_id').value = '';
+                document.getElementById('resultado_busqueda').innerText = '';
+                document.getElementById('sel_pensum').value = '';
+                estudianteSeleccionadoID = null;
+            } else {
+                Swal.fire('Error en Oracle', data.error, 'error');
+            }
+        })
+        .catch(err => console.error("Error:", err));
+    }
+
+    let listaCompletaEstudiantes = [];
+
+    // Función para filtrar mientras escribes (como en auditoría)
+    function filtrarEstudiantesLista() {
+        const texto = document.getElementById('busc_id').value.toUpperCase();
+        const listaContenedor = document.getElementById('lista_estudiantes');
+        
+        if (texto.length < 1) {
+            listaContenedor.style.display = 'none';
+            return;
+        }
+
+        // Si aún no tenemos los datos, los pedimos una vez
+        if (listaCompletaEstudiantes.length === 0) {
+            fetch('/terceros')
+                .then(res => res.json())
+                .then(data => {
+                    listaCompletaEstudiantes = data;
+                    renderizarResultados(texto);
+                });
+        } else {
+            renderizarResultados(texto);
+        }
+    }
+
+    function renderizarResultados(filtro) {
+        const listaContenedor = document.getElementById('lista_estudiantes');
+        const sugerencias = listaCompletaEstudiantes.filter(est => 
+            est.TERC_ID.toString().includes(filtro) || 
+            est.TERC_NOMBRES.toUpperCase().includes(filtro) ||
+            est.TERC_APELLIDOS.toUpperCase().includes(filtro)
+        );
+
+        if (sugerencias.length > 0) {
+            listaContenedor.innerHTML = sugerencias.map(est => `
+                <button type="button" class="list-group-item list-group-item-action" 
+                    onclick="seleccionarEstudiante('${est.TERC_ID}', '${est.TERC_NOMBRES} ${est.TERC_APELLIDOS}')">
+                    <strong>${est.TERC_ID}</strong> - ${est.TERC_NOMBRES} ${est.TERC_APELLIDOS}
+                </button>
+            `).join('');
+            listaContenedor.style.display = 'block';
+        } else {
+            listaContenedor.style.display = 'none';
+        }
+    }
+
+    // Esta función se activa cuando haces CLIC en un nombre de la lista
+    function seleccionarEstudiante(id, nombre) {
+        estudianteSeleccionadoID = id;
+        document.getElementById('busc_id').value = id;
+        document.getElementById('resultado_busqueda').innerHTML = `✅ Seleccionado: <span class="text-success">${nombre}</span>`;
+        document.getElementById('lista_estudiantes').style.display = 'none';
+        document.getElementById('sel_programa').disabled = false;
+        
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: 'Estudiante seleccionado',
+            showConfirmButton: false,
+            timer: 1500
+        });
+    }
+</script>
 </body>
 </html>

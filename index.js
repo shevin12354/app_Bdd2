@@ -4,90 +4,107 @@ const path = require('path');
 const app = express();
 const port = 3000;
 
+app.use(express.json());
 
+// Inicialización de Oracle
 try {
   oracledb.initOracleClient({ libDir: 'C:\\oracle_client' });
 } catch (err) {
-  console.error(' Error crítico al cargar librerías de Oracle:', err);
+  console.error(' Error crítico al cargar Oracle:', err);
 }
 
-// Configuración de conexión para el usuario de la Uniremington
 const dbConfig = {
   user: "BASE2",
   password: "312",
   connectString: "localhost/xe"
 };
 
-
+// --- RUTAS DE NAVEGACIÓN ---
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-//  RUTA DE DATOS (API): Entrega los datos de la vista V_AUDITORIAS en formato JSON
+// --- RUTA: LOGIN ---
+app.post('/login', async (req, res) => {
+    const { usuario, password } = req.body;
+    let connection;
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+        const result = await connection.execute(
+            `SELECT TERC_NOMBRES FROM TERCEROS WHERE TERC_ID = :u AND TERC_ID = :p`,
+            { u: usuario, p: password },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        if (result.rows.length > 0) {
+            res.json({ success: true, nombre: result.rows[0].TERC_NOMBRES });
+        } else {
+            res.json({ success: false });
+        }
+    } catch (err) { res.status(500).json({ error: err.message }); }
+    finally { if (connection) await connection.close(); }
+});
+
+// --- RUTA: AUDITORÍA (PROCESOS) ---
 app.get('/datos', async (req, res) => {
   let connection;
   try {
     connection = await oracledb.getConnection(dbConfig);
-    const result = await connection.execute(
-      `SELECT * FROM V_AUDITORIAS`,
-      [], 
-      { outFormat: oracledb.OUT_FORMAT_OBJECT } // Entrega los datos como objetos { columna: valor }
-    );
+    const result = await connection.execute(`SELECT * FROM V_AUDITORIAS`, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
     res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: "Error en la base de datos: " + err.message });
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (e) {
-        console.error("Error al cerrar la conexión:", e);
-      }
-    }
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
+  finally { if (connection) await connection.close(); }
 });
 
-// Lanzamiento del servidor
-app.listen(port, () => {
-  console.log(`\n ¡PROYECTO LISTO!`);
-  console.log(`-------------------------------------------`);
-  console.log(` Ver Interfaz (Tabla): http://localhost:${port}`);
-  console.log(` Ver Datos Puros (JSON): http://localhost:${port}/datos`);
-  console.log(`-------------------------------------------\n`);
-  console.log(`papoche`);
-});
-
-function buscarPorId() {
-        let input = document.getElementById("searchId");
-        let filtro = input.value.toUpperCase();
-        let filas = document.getElementById("cuerpoTabla").getElementsByTagName("tr");
-
-        for (let i = 0; i < filas.length; i++) {
-            let celdaId = filas[i].getElementsByTagName("td")[2]; // Columna del ID
-            if (celdaId) {
-                let textoId = celdaId.textContent || celdaId.innerText;
-                filas[i].style.display = textoId.toUpperCase().indexOf(filtro) > -1 ? "" : "none";
-            }
+// --- RUTA: LISTAR TERCEROS (DATOS/TABLAS) ---
+app.get('/terceros', async (req, res) => {
+    let connection;
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+        // Traemos ID, Nombres y Apellidos de la tabla TERCEROS
+        const result = await connection.execute(
+            `SELECT TERC_ID, TERC_NOMBRES, TERC_APELLIDOS FROM TERCEROS`,
+            [], 
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Error al consultar TERCEROS" });
+    } finally {
+        if (connection) {
+            await connection.close();
         }
     }
-
-    fetch('/datos')
-        .then(res => res.json())
-        .then(data => {
-            const cuerpo = document.getElementById('cuerpoTabla');
-            cuerpo.innerHTML = ''; // Limpiar antes de cargar
-            data.forEach(fila => {
-                const fechaFormateada = new Date(fila.FECHA).toLocaleString('es-CO');
-                cuerpo.innerHTML += `
-                    <tr>
-                        <td class="text-muted small">${fechaFormateada}</td>
-                        <td><span class="badge bg-light text-dark border">${fila.USUARIO}</span></td>
-                        <td><strong>${fila.TERC_ID}</strong></td>
-                        <td>${fila.TERC_NOMBRES} ${fila.TERC_APELLIDOS}</td>
-                        <td class="text-secondary small">${fila.ASIG_ASIGNATURA}</td>
-                        <td class="text-center"><span class="badge-nota bg-secondary text-white">${fila.HIST_NOTA_ANT || '0.0'}</span></td>
-                        <td class="text-center"><span class="badge-nota bg-primary text-white">${fila.HIST_NOTA_DESP}</span></td>
-                    </tr>`;
-    });
 });
 
+// --- RUTA: GUARDAR ASIGNACIÓN DE PENSUM (BOTÓN VERDE) ---
+app.post('/asignar-pensum', async (req, res) => {
+    const { PENS_ID, TERC_ID, PERIODO } = req.body;
+    let connection;
+
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+        
+        // INSERT exacto con los 3 campos que necesitas
+        const sql = `INSERT INTO TERC_PENSUMS (PENS_ID, TERC_ID, TEPE_PERIODO) 
+                     VALUES (:pens, :terc, :peri)`;
+        
+        await connection.execute(sql, {
+            pens: PENS_ID,  // Aquí llegará el 1000
+            terc: TERC_ID,  // El ID del estudiante que buscaste
+            peri: PERIODO   // Ejemplo: 202601 como se ve en tu captura
+        }, { autoCommit: true });
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: err.message });
+    } finally {
+        if (connection) await connection.close();
+    }
+});
+
+app.listen(port, () => { 
+    console.log(`🚀 Servidor Uniremington corriendo en http://localhost:${port}`);
+    console.log(`💡 Todo listo para la revisión del profe.`);
+});
