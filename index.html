@@ -76,7 +76,26 @@
             <div class="card p-4">
                 <h3 class="mb-3">📊 Gestión de Datos (Terceros)</h3>
                 <hr>
-                <div class="alert alert-info">Aquí cargarás el CRUD de estudiantes para la próxima entrega.</div>
+                <div class="row g-3 mb-4">
+    <div class="col-md-2"><input id="id" class="form-control" placeholder="ID"></div>
+    <div class="col-md-3"><input id="nombres" class="form-control" placeholder="Nombres"></div>
+    <div class="col-md-3"><input id="apellidos" class="form-control" placeholder="Apellidos"></div>
+    <div class="col-md-2"><input id="correo" class="form-control" placeholder="Correo"></div>
+    <div class="col-md-2">
+        <button class="btn btn-success w-100" onclick="guardar()">Guardar</button>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th><th>Nombres</th><th>Apellidos</th><th>Correo</th><th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="tablaTerceros"></tbody>
+    </table>
+</div>
             </div>
         </div>
 
@@ -157,28 +176,20 @@
 
 <script>
     // 1. LOGIN
-    function ejecutarLogin() {
-        const usuario = document.getElementById('usu').value;
-        const password = document.getElementById('pass').value;
+function ejecutarLogin() {
+    const usuario = document.getElementById('usu').value;
+    const password = document.getElementById('pass').value;
 
-        fetch('/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ usuario, password })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('vista-login').style.display = 'none';
-                document.getElementById('vista-principal').style.display = 'block';
-                document.getElementById('saludoUser').innerText = "👤 " + data.nombre;
-                cambiarSeccion('inicio', null); 
-            } else {
-                Swal.fire('Error', 'Documento o contraseña incorrectos', 'error');
-            }
-        });
+    // Simulación local
+    if (usuario === "1" && password === "1") {
+        document.getElementById('vista-login').style.display = 'none';
+        document.getElementById('vista-principal').style.display = 'block';
+        document.getElementById('saludoUser').innerText = "👤 Admin Local";
+        cambiarSeccion('inicio', null); 
+    } else {
+        Swal.fire('Error', 'Documento o contraseña incorrectos', 'error');
     }
-
+}
     // 2. NAVEGACIÓN ENTRE SECCIONES
     function cambiarSeccion(seccion, elemento) {
         // Ocultar todas
@@ -195,6 +206,8 @@
 
         // Cargar datos si es auditoría
         if(seccion === 'auditoria') cargarDatosAuditoria();
+        // Cargar datos si es gestión de terceros
+        if(seccion === 'datos') cargarTerceros();
     }
 
     // 3. CARGAR DATOS DE ORACLE
@@ -367,6 +380,60 @@
             timer: 1500
         });
     }
+
+    function cargarTerceros() {
+    fetch('/terceros')
+        .then(res => res.json())
+        .then(data => {
+            const tabla = document.getElementById('tablaTerceros');
+            tabla.innerHTML = '';
+
+            data.forEach(t => {
+                tabla.innerHTML += `
+                    <tr>
+                        <td>${t.TERC_ID}</td>
+                        <td>${t.TERC_NOMBRES}</td>
+                        <td>${t.TERC_APELLIDOS || ''}</td>
+                        <td>${t.TERC_CORREO || ''}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" onclick="editar(${t.TERC_ID})">✏️</button>
+                            <button class="btn btn-danger btn-sm" onclick="eliminar(${t.TERC_ID})">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        });
+}
+
+function guardar() {
+    const data = {
+        TERC_ID: document.getElementById('id').value,
+        TERC_NOMBRES: document.getElementById('nombres').value,
+        TERC_APELLIDOS: document.getElementById('apellidos').value,
+        TERC_CORREO: document.getElementById('correo').value
+    };
+
+    fetch('/terceros', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(() => {
+        Swal.fire('OK', 'Guardado', 'success');
+        cargarTerceros();
+    });
+}
+
+function editar(id) {
+    fetch('/terceros/' + id)
+        .then(res => res.json())
+        .then(t => {
+            document.getElementById('id').value = t.TERC_ID;
+            document.getElementById('nombres').value = t.TERC_NOMBRES;
+            document.getElementById('apellidos').value = t.TERC_APELLIDOS;
+            document.getElementById('correo').value = t.TERC_CORREO;
+        });
+}
 </script>
 </body>
 </html>

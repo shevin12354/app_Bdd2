@@ -56,24 +56,23 @@ app.get('/datos', async (req, res) => {
 });
 
 // --- RUTA: LISTAR TERCEROS (DATOS/TABLAS) ---
-app.get('/terceros', async (req, res) => {
+app.get('/terceros/:id', async (req, res) => {
     let connection;
     try {
         connection = await oracledb.getConnection(dbConfig);
-        // Traemos ID, Nombres y Apellidos de la tabla TERCEROS
+
         const result = await connection.execute(
-            `SELECT TERC_ID, TERC_NOMBRES, TERC_APELLIDOS FROM TERCEROS`,
-            [], 
+            `SELECT * FROM TERCEROS WHERE TERC_ID = :id`,
+            { id: req.params.id },
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         );
-        res.json(result.rows);
+
+        res.json(result.rows[0] || null);
+
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Error al consultar TERCEROS" });
+        res.status(500).json({ error: err.message });
     } finally {
-        if (connection) {
-            await connection.close();
-        }
+        if (connection) await connection.close();
     }
 });
 
@@ -99,6 +98,107 @@ app.post('/asignar-pensum', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, error: err.message });
+    } finally {
+        if (connection) await connection.close();
+    }
+});
+
+app.post('/terceros', async (req, res) => {
+    const data = req.body;
+    let connection;
+
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+
+        const sql = `INSERT INTO TERCEROS (
+            TERC_ID, TERC_TIPO_DOC, TERC_NRO_DOC, TERC_GENERO,
+            TERC_NOMBRES, TERC_APELLIDOS, TERC_DIRECC,
+            TERC_CORREO, TERC_MOVIL, TERC_TIPO
+        ) VALUES (
+            :id, :tipoDoc, :nroDoc, :genero,
+            :nombres, :apellidos, :direcc,
+            :correo, :movil, :tipo
+        )`;
+
+        await connection.execute(sql, {
+            id: data.TERC_ID,
+            tipoDoc: data.TERC_TIPO_DOC,
+            nroDoc: data.TERC_NRO_DOC,
+            genero: data.TERC_GENERO,
+            nombres: data.TERC_NOMBRES,
+            apellidos: data.TERC_APELLIDOS,
+            direcc: data.TERC_DIRECC,
+            correo: data.TERC_CORREO,
+            movil: data.TERC_MOVIL,
+            tipo: data.TERC_TIPO
+        }, { autoCommit: true });
+
+        res.json({ success: true });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (connection) await connection.close();
+    }
+});
+
+app.put('/terceros/:id', async (req, res) => {
+    const data = req.body;
+    let connection;
+
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+
+        const sql = `UPDATE TERCEROS SET
+            TERC_TIPO_DOC = :tipoDoc,
+            TERC_NRO_DOC = :nroDoc,
+            TERC_GENERO = :genero,
+            TERC_NOMBRES = :nombres,
+            TERC_APELLIDOS = :apellidos,
+            TERC_DIRECC = :direcc,
+            TERC_CORREO = :correo,
+            TERC_MOVIL = :movil,
+            TERC_TIPO = :tipo
+        WHERE TERC_ID = :id`;
+
+        await connection.execute(sql, {
+            id: req.params.id,
+            tipoDoc: data.TERC_TIPO_DOC,
+            nroDoc: data.TERC_NRO_DOC,
+            genero: data.TERC_GENERO,
+            nombres: data.TERC_NOMBRES,
+            apellidos: data.TERC_APELLIDOS,
+            direcc: data.TERC_DIRECC,
+            correo: data.TERC_CORREO,
+            movil: data.TERC_MOVIL,
+            tipo: data.TERC_TIPO
+        }, { autoCommit: true });
+
+        res.json({ success: true });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (connection) await connection.close();
+    }
+});
+
+app.delete('/terceros/:id', async (req, res) => {
+    let connection;
+
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+
+        await connection.execute(
+            `DELETE FROM TERCEROS WHERE TERC_ID = :id`,
+            { id: req.params.id },
+            { autoCommit: true }
+        );
+
+        res.json({ success: true });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     } finally {
         if (connection) await connection.close();
     }
